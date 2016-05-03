@@ -20,6 +20,8 @@
     </style>
   </head>
   <body>
+    <h1>Least squares polynomial fit</h1>
+    <p>Drag points to change the fit</p>
     <div id="graph" xmlns="http://www.w3.org/2000/svg"/>
     <script>
       var margin = {top: 30, right: 20, bottom: 30, left: 50};
@@ -39,10 +41,11 @@
       }
 
       var stencil = [];
-      stencil.push({x: -5, y: 2});
-      stencil.push({x: -3, y: 1});
       stencil.push({x: -1, y: 4});
       stencil.push({x:  1, y: 3});
+      stencil.push({x: -5, y: 2});
+      stencil.push({x: -4, y: 0});
+      stencil.push({x: -3, y: 1});
 
       var x = d3.scale.linear().domain([-5, 1]).range([0, width]);
       var y = d3.scale.linear().domain([0, 5]).range([height, 0]);
@@ -69,15 +72,37 @@
         .attr("class", "axis")
         .call(yAxis);
 
-      var polynomial = fit(stencil, cubic());
-      graph.append("path").attr("d", line(approximate(x.domain(), polynomial))); 
+      function dragmove(d) {
+        var newX = x.invert(d3.event.x);
+        var newY = y.invert(d3.event.y);
+        var index = d3.select(this).attr("point-index");
+        stencil[index].x = newX;
+        stencil[index].y = newY;
 
-      graph.selectAll("dot")
-        .data(stencil)
-        .enter().append("circle")
+        redraw();
+      }
+
+      function redraw() {
+        var polynomial = fit(stencil, cubic());
+        graph.select("#polynomial").remove();
+        graph.append("path")
+          .attr("id", "polynomial")        
+          .attr("d", line(approximate(x.domain(), polynomial))); 
+
+        graph.selectAll("circle").remove();
+        graph.selectAll("dot").data(stencil).enter().append("circle")
+          .attr("point-index", function(d, i) { return i; })
           .attr("r", 5)
           .attr("cx", function(d) { return x(d.x); })
-          .attr("cy", function(d) { return y(d.y); });
+          .attr("cy", function(d) { return y(d.y); })
+          .style("cursor", "pointer")
+          .call(drag);
+      }
+
+      var drag = d3.behavior.drag()
+        .on("drag", dragmove);
+
+      redraw();
     </script>
   </body>
 </html>
