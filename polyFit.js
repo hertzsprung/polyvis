@@ -1,10 +1,10 @@
-function fit(points, polynomial) {
-  var B = matrix(points, polynomial);
+function fit(points, polynomial, weights) {
+  var B = matrix(points, polynomial, weights);
   var Binv = pinv(B);
 
   var yVector = [];
   for (var j = 0; j < points.length; j++) {
-    yVector.push(points[j].y);
+    yVector.push(points[j].y * weights[j]);
   }
 
   var coefficients = numeric.dot(Binv, yVector)
@@ -17,12 +17,12 @@ function fit(points, polynomial) {
   };
 }
 
-function matrix(points, polynomial) {
+function matrix(points, polynomial, weights) {
   var B = [];
   for (var row = 0; row < points.length; row++) {
     B.push([]);
     for (var col = 0; col < polynomial.length; col++) {
-      B[row].push(polynomial[col](points[row].x)); 
+      B[row].push(weights[row] * polynomial[col](points[row].x)); 
     }
   }
   return B;
