@@ -40,9 +40,19 @@ text.quad {
 	stroke-width: 3;
 }
 
-#valuedump {
+#pointdump,
+#weightdump {
+	font-family: monospace;
+	display: inline-block;
 	border: 1px black solid;
 	padding: 1em;
-	width: 40em;
-	height: 10em;
+	width: 20em;
+}
+
+#pointdump:before {
+	content: "# points";
+}
+
+#weightdump:before {
+	content: "# weights";
 }

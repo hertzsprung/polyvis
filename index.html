@@ -8,7 +8,10 @@
   </head>
   <body>
     <div id="graph"></div>
-    <div id="valuedump"></div>
+    <div>
+    <div id="pointdump"></div>
+    <div id="weightdump"></div>
+    </div>
 <script>
   var margin = {top: 30, right: 20, bottom: 30, left: 50};
   var width = 640;
@@ -30,10 +33,9 @@
   stencil.push({x: -1, y: 2.5});
   stencil.push({x:  0.6, y: 3});
   stencil.push({x: -5, y: 5});
-  stencil.push({x: -4, y: 2});
   stencil.push({x: -3, y: 1});
 
-  var weights = [1e3, 1e3, 1, 1, 1];
+  var weights = [1e3, 1e3, 1, 1];
 
   var x = d3.scale.linear().domain([-5, 1]).range([0, width]);
   var y = d3.scale.linear().domain([0, 5]).range([height, 0]);
@@ -65,8 +67,13 @@
     var newX = x.invert(d3.event.x);
     var newY = y.invert(d3.event.y);
     var index = d3.select(this).attr("point-index");
-    stencil[index].x = newX;
-    stencil[index].y = newY;
+
+    if (d3.event.sourceEvent.ctrlKey) {
+      weights[index] = Math.max(1, Math.pow(10, newY));
+    } else {
+      stencil[index].x = newX;
+      stencil[index].y = newY;
+    }
 
     redraw();
   }
@@ -113,10 +120,15 @@
         .attr("y", function(d) { return y(d.y) - 10; })
         .text(function(d, i) { return format(quadFit.coefficients[i]); });
 
-    d3.select("#valuedump").selectAll("div").remove()
-    d3.select("#valuedump").selectAll("stencil").data(stencil).enter()
+    d3.select("#pointdump").selectAll("div").remove()
+    d3.select("#pointdump").selectAll("point").data(stencil).enter()
       .append("div")
-        .text(function(d) { return "(" + format(d.x) + ", " + format(d.y) + "),"; });
+        .text(function(d) { return "(" + format(d.x) + ", " + format(d.y) + "), \\"; });
+
+    d3.select("#weightdump").selectAll("div").remove()
+    d3.select("#weightdump").selectAll("weight").data(weights).enter()
+      .append("div")
+        .text(function(d) { return format(d) + ", \\"; });
   }
 
   var drag = d3.behavior.drag()
