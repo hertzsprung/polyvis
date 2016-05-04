@@ -39,3 +39,10 @@ text.quad {
 	stroke: black;
 	stroke-width: 3;
 }
+
+#valuedump {
+	border: 1px black solid;
+	padding: 1em;
+	width: 40em;
+	height: 10em;
+}

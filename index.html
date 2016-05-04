@@ -8,6 +8,7 @@
   </head>
   <body>
     <div id="graph"></div>
+    <div id="valuedump"></div>
 <script>
   var margin = {top: 30, right: 20, bottom: 30, left: 50};
   var width = 640;
@@ -111,6 +112,11 @@
         .attr("x", function(d) { return x(d.x) - 10; })
         .attr("y", function(d) { return y(d.y) - 10; })
         .text(function(d, i) { return format(quadFit.coefficients[i]); });
+
+    d3.select("#valuedump").selectAll("div").remove()
+    d3.select("#valuedump").selectAll("stencil").data(stencil).enter()
+      .append("div")
+        .text(function(d) { return "(" + format(d.x) + ", " + format(d.y) + "),"; });
   }
 
   var drag = d3.behavior.drag()
