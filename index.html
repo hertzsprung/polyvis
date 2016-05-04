@@ -7,11 +7,15 @@
     <script src="script/polyFit.js" type="text/javascript"></script>
   </head>
   <body>
-    <div id="graph"></div>
-    <div>
-    <div id="pointdump"></div>
-    <div id="weightdump"></div>
-    </div>
+<p>This demonstration shows quadratic and cubic polynomials fitted through a set of points using a least squares approach.  This technique generalises to higher dimensions and can be used as an interpolation function for solving the flux form <a href="https://en.wikipedia.org/wiki/Advection#The_advection_equation">advection equation</a> on arbitrary meshes.</p>
+
+<p>Drag points to change the fit.  Control-drag points to change weights.  The polynomial is fitted almost exactly through the filled points and inexactly through the open points.</p>
+<div id="graph"></div>
+<div>
+  <div id="pointdump"></div>
+  <div id="weightdump"></div>
+</div>
+<p>Created with <a href="https://d3js.org/">d3js</a> and <a href="http://www.numericjs.com/">numericjs</a>.  The source repository is <a href="https://github.com/hertzsprung/polyvis">available on GitHub</a>.</p>
 <script>
   var margin = {top: 30, right: 20, bottom: 30, left: 50};
   var width = 640;
