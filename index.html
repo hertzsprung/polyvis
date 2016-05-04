@@ -1,119 +1,122 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
-    <script src="numeric-1.2.6.min.js" charset="utf-8"></script>
-    <script src="polyFit.js" charset="utf-8"></script>
-    <style>
-      .axis path,
-      .axis line {
-        stroke: grey;
-        stroke-width: 1;
-        fill: none;
-      }
-      
-      circle[point-index=0] {
-        fill: red;
-      }
-
-      path {
-        stroke: steelblue;
-        stroke-width: 2;
-        fill: none;
-      }
-    </style>
+    <link rel="stylesheet" href="css/polyFit.css"/>
+    <script src="script/d3.v3.min.js" type="text/javascript"></script>
+    <script src="script/numeric-1.2.6.min.js" type="text/javascript"></script>
+    <script src="script/polyFit.js" type="text/javascript"></script>
   </head>
   <body>
-    <h1>Interactive least squares polynomial fit</h1>
-    <p>This demonstration shows a cubic polynomial is fitted through a set of points using a least squares approach.  This technique generalises to higher dimensions and can be used as an interpolation function for solving the flux form <a href="https://en.wikipedia.org/wiki/Advection#The_advection_equation">advection equation</a> on arbitrary meshes.</p>
-    <p>Drag points to change the fit.  The polynomial is fitted almost exactly through the red points and inexactly through the black points.</p>
-    <div id="graph" xmlns="http://www.w3.org/2000/svg"></div>
-    <p>Created with <a href="https://d3js.org/">d3js</a> and <a href="http://www.numericjs.com/">numericjs</a>.  The source repository is <a href="https://github.com/hertzsprung/polyvis">available on GitHub</a>.</p>
+    <div id="graph"></div>
+<script>
+  var margin = {top: 30, right: 20, bottom: 30, left: 50};
+  var width = 640;
+  var height = 480;
 
-    <script>
-      var margin = {top: 30, right: 20, bottom: 30, left: 50};
-      var width = 640;
-      var height = 480;
+  function approximate(domain, f) {
+    var N = 100;
+    var dx = (domain[1] - domain[0]) / N;
 
-      function approximate(domain, f) {
-        var N = 100;
-        var dx = (domain[1] - domain[0]) / N;
+    var data = [];
+    for (var i = 0; i <= N; i++) {
+      var x = domain[0] + i*dx;
+      data.push({x: x, y: f(x)});
+    }
+    return data;
+  }
 
-        var data = [];
-        for (var i = 0; i <= N; i++) {
-          var x = domain[0] + i*dx;
-          data.push({x: x, y: f(x)});
-        }
-        return data;
-      }
+  var stencil = [];
+  stencil.push({x: -1, y: 2.5});
+  stencil.push({x:  0.6, y: 3});
+  stencil.push({x: -5, y: 5});
+  stencil.push({x: -4, y: 2});
+  stencil.push({x: -3, y: 1});
 
-      var stencil = [];
-      stencil.push({x: -1, y: 4});
-      stencil.push({x:  0.6, y: 3});
-      stencil.push({x: -5, y: 5});
-      stencil.push({x: -4, y: 0});
-      stencil.push({x: -3, y: 1});
+  var weights = [1e3, 1e3, 1, 1, 1];
 
-      var weights = [1e3, 1e3, 1, 1, 1];
+  var x = d3.scale.linear().domain([-5, 1]).range([0, width]);
+  var y = d3.scale.linear().domain([0, 5]).range([height, 0]);
 
-      var x = d3.scale.linear().domain([-5, 1]).range([0, width]);
-      var y = d3.scale.linear().domain([0, 5]).range([height, 0]);
+  var line = d3.svg.line()
+    .x(function(d) { return x(d.x); })
+    .y(function(d) { return y(d.y); });
 
-      var line = d3.svg.line()
-        .x(function(d) { return x(d.x); })
-        .y(function(d) { return y(d.y); });
+  var graph = d3.select("#graph")
+    .append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-      var graph = d3.select("#graph")
-        .append("svg")
-          .attr("width", width + margin.left + margin.right)
-          .attr("height", height + margin.top + margin.bottom)
-        .append("g")
-          .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+  var xAxis = d3.svg.axis().scale(x).tickValues([-5, -4, -3, -2, -1, 0, 1]);
+  graph.append("g")
+    .attr("class", "axis")
+    .attr("transform", "translate(0," + height + ")")
+    .call(xAxis);
 
-      var xAxis = d3.svg.axis().scale(x).tickValues([-5, -4, -3, -2, -1, 0, 1]);
-      graph.append("g")
-        .attr("class", "axis")
-        .attr("transform", "translate(0," + height + ")")
-        .call(xAxis);
+  var yAxis = d3.svg.axis().scale(y).tickValues([0, 1, 2, 3, 4, 5]).orient("left");
+  graph.append("g")
+    .attr("class", "axis")
+    .attr("transform", "translate(" + x(0) + ",0)")
+    .call(yAxis);
 
-      var yAxis = d3.svg.axis().scale(y).tickValues([0, 1, 2, 3, 4, 5]).orient("left");
-      graph.append("g")
-        .attr("class", "axis")
-        .call(yAxis);
+  function dragmove(d) {
+    var newX = x.invert(d3.event.x);
+    var newY = y.invert(d3.event.y);
+    var index = d3.select(this).attr("point-index");
+    stencil[index].x = newX;
+    stencil[index].y = newY;
 
-      function dragmove(d) {
-        var newX = x.invert(d3.event.x);
-        var newY = y.invert(d3.event.y);
-        var index = d3.select(this).attr("point-index");
-        stencil[index].x = newX;
-        stencil[index].y = newY;
+    redraw();
+  }
 
-        redraw();
-      }
+  function format(a) {
+    return Math.round(a*100)/100;
+  }
 
-      function redraw() {
-        var polynomial = fit(stencil, cubic(), weights);
-        graph.select("#polynomial").remove();
-        graph.append("path")
-          .attr("id", "polynomial")        
-          .attr("d", line(approximate(x.domain(), polynomial))); 
+  function redraw() {
+    var quadFit = fit(stencil, quadratic(), weights);
+    var cubicFit = fit(stencil, cubic(), weights);
 
-        graph.selectAll("circle").remove();
-        graph.selectAll("dot").data(stencil).enter().append("circle")
-          .attr("point-index", function(d, i) { return i; })
-          .attr("r", 8)
-          .attr("fill", function(d, i) { return i < 2 ? "red" : "black"; })
-          .attr("cx", function(d) { return x(d.x); })
-          .attr("cy", function(d) { return y(d.y); })
-          .style("cursor", "pointer")
-          .call(drag);
-      }
+    graph.selectAll(".polynomial").remove();
+    graph.append("path")
+      .attr("class", "polynomial quad")        
+      .attr("d", line(approximate(x.domain(), quadFit.polynomial))); 
+    graph.append("path")
+      .attr("class", "polynomial cubic")        
+      .attr("d", line(approximate(x.domain(), cubicFit.polynomial))); 
 
-      var drag = d3.behavior.drag()
-        .on("drag", dragmove);
+    graph.selectAll("circle").remove();
+    graph.selectAll(".coeff").remove();
+    graph.selectAll("point").data(stencil).enter()
+      .append("circle")
+        .attr("point-index", function(d, i) { return i; })
+        .attr("r", 8)
+        .attr("class", function(d, i) { return i < 2 ? "central" : "peripheral"; })
+        .attr("cx", function(d) { return x(d.x); })
+        .attr("cy", function(d) { return y(d.y); })
+        .style("cursor", "pointer")
+        .call(drag);
 
-      redraw();
-    </script>
-  </body>
+    graph.selectAll("coeffs").data(stencil).enter()
+      .append("text")
+        .attr("class", "coeff cubic")
+        .attr("x", function(d) { return x(d.x) + 10; })
+        .attr("y", function(d) { return y(d.y) + 10; })
+        .text(function(d, i) { return format(cubicFit.coefficients[i]); });
+
+    graph.selectAll("coeffs").data(stencil).enter()
+      .append("text")
+        .attr("class", "coeff quad")
+        .attr("x", function(d) { return x(d.x) - 10; })
+        .attr("y", function(d) { return y(d.y) - 10; })
+        .text(function(d, i) { return format(quadFit.coefficients[i]); });
+  }
+
+  var drag = d3.behavior.drag()
+    .on("drag", dragmove);
+
+  redraw();
+</script>
+</body>
 </html>
-

@@ -8,12 +8,15 @@ function fit(points, polynomial, weights) {
   }
 
   var coefficients = numeric.dot(Binv, yVector)
-  return function(x) {
-    var y = 0;
-    for (term = 0; term < polynomial.length; term++) {
-      y += coefficients[term] * polynomial[term](x);
-    }
-    return y;
+  return {
+    polynomial: function(x) {
+        var y = 0;
+        for (term = 0; term < polynomial.length; term++) {
+          y += coefficients[term] * polynomial[term](x);
+        }
+        return y;
+      },
+    coefficients: numeric.mul(Binv[0], weights)
   };
 }
 
@@ -26,6 +29,14 @@ function matrix(points, polynomial, weights) {
     }
   }
   return B;
+}
+
+function quadratic() {
+  return [
+    function(x) { return 1.0; },
+    function(x) { return x; },
+    function(x) { return Math.pow(x, 2); }
+  ];
 }
 
 function cubic() {

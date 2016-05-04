@@ -1,0 +1,41 @@
+.axis path,
+.axis line {
+	stroke: grey;
+	stroke-width: 1;
+	fill: none;
+}
+
+path {
+	stroke: steelblue;
+	stroke-width: 2;
+	fill: none;
+}
+
+path.cubic {
+	stroke: steelblue;
+}
+
+text.cubic {
+	fill: steelblue;
+}
+
+path.quad {
+	stroke: orangered;
+}
+
+text.quad {
+	fill: orangered;
+	text-anchor: end;
+}
+
+.central {
+	fill: black;
+	stroke: black;
+	stroke-width: 3;
+}
+
+.peripheral {
+	fill: white;
+	stroke: black;
+	stroke-width: 3;
+}
