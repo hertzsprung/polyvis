@@ -52,24 +52,14 @@
         .attr("cy", function(d) { return y(d.y); });
   }
 
+  var simulation = sineWave(uniformDomain(1, 16), 1);
+
   graph.append("path")
     .attr("class", "initial")
-    .attr("d", line(T_init)); 
+    .attr("d", line(simulation.frames[0].T)); 
 
-  for (var nt=1; t < endTime+dt; nt+=1, t+=dt) {
-      forwardStep(cubic());
-  }
-  redraw(T, "cubic");
-
-  T = T_init.slice();
-  T_old = T_init.slice();
-  T_oldOld = T_init.slice();
-
-  t = 0;
-  for (var nt=1; t < endTime+dt; nt+=1, t+=dt) {
-      forwardStep(quadratic());
-  }
-  redraw(T, "quad");
+  simulation = simulate(simulation, cubic(), 32, 0.01, 1/32);
+  redraw(simulation.frames[simulation.frames.length - 1].T, "cubic");
 </script>
 </body>
 </html>

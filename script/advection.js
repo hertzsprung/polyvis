@@ -1,70 +1,79 @@
-var T = [];
-var L = 1;
-var N = 16;
-var dx = L/N;
+function uniformDomain(width, divisions) {
+  var dx = width/divisions;
 
-for (var i=0; i < N; i++) {
-  x = i*dx+dx/2;
-  T.push({x: x});
-}
+  var simulation = {
+    width: width,
+    divisions: divisions, // FIXME: remove this when properly non-uniform
+    frames: [{nt:0, t:0, T: []}]
+  };
 
-var k = 8*2*Math.PI;
+  var T = simulation.frames[0].T;
 
-for (var i=0; i < N; i++) {
-  T[i].y = Math.sin(k*T[i].x);
-}
-
-T_init = T.slice();
-T_oldOld = T.slice();
-T_old = T.slice();
-
-var t = 0;
-var dt = 0.01;
-var endTime = 32;
-var u = L / 32;
-var Co = 2*u * dt / dx;
-console.log("Courant", Co/2);
-
-function forwardStep(interpolator) {
-  for (var i=0; i < N; i++) {
-    T[i] = { x: T_old[i].x, y: T_old[i].y - 0.5*Co * (flux(T_old, i, i-2, i+1, interpolator) - flux(T_old, i-1, i-3, i, interpolator))};
+  for (var i=0; i < divisions; i++) {
+    T.push({x: i*dx+dx/2});
   }
-  T_oldOld = T_old.slice();
-  T_old = T.slice();
+
+  return simulation; 
 }
 
-function leapfrogStep() {
-  for (var i=0; i < N; i++) {
-    T[i] = { x: T_old[i].x, y: T_oldOld[i].y - Co * (flux(T_old, i, i-2, i+1) - flux(T_old, i-1, i-3, i))};
+function sineWave(simulation, k) {
+  k *= 2*Math.PI;
+
+  var T = simulation.frames[0].T;
+
+  for (var i=0; i < T.length; i++) {
+    T[i].y = Math.sin(k*T[i].x);
   }
-  T_oldOld = T_old.slice();
-  T_old = T.slice();
+
+  return simulation;
 }
 
-function mod(a, b) {
-  return ((a%b)+b)%b;
+function simulate(simulation, interpolator, endTime, dt, u) {
+  simulation.interpolator = interpolator;
+
+  var dx = simulation.width / simulation.divisions; // FIXME: this will disappear with properly nonuniform grid
+  var t = dt;
+  simulation.Co = u * dt / dx;
+
+  for (var nt=1; t < endTime+dt; nt+=1, t+=dt) {
+    var T_old = simulation.frames[nt-1].T;
+
+    var T = forwardStep(simulation);
+
+    simulation.frames.push({nt:nt, t:t, T: T});
+  }
+  return simulation;
 }
 
-function access(T, i) {
-  return T[mod(i, T.length)];
+function forwardStep(simulation) {
+  var T_old = simulation.frames[simulation.frames.length - 1].T;
+  var T = T_old.slice();
+
+  for (var i=0; i < T.length; i++) {
+    T[i] = { x: T_old[i].x, y: T_old[i].y - simulation.Co * (
+        flux(T_old, i, i-2, i+1, simulation) - 
+        flux(T_old, i-1, i-3, i, simulation))};
+  }
+
+  return T;
 }
 
-function flux(T, upwindOriginIndex, start, end, interpolator) {
+function flux(T, upwindOriginIndex, start, end, simulation) {
   var stencil = [];
   for (var i=start; i <= end; i++) {
     stencil.push(access(T, i));
   }
-  stencil = localise(stencil, upwindOriginIndex-start);
+  stencil = localise(stencil, upwindOriginIndex-start, simulation.width);
   weights = [1e3, 1e3, 1, 1];
-  return numeric.dot(values(stencil), fit(stencil, interpolator, weights).coefficients);
+  return numeric.dot(values(stencil), fit(stencil, simulation.interpolator, weights).coefficients);
 }
 
-function localise(T, upwindOriginIndex) {
+function localise(T, upwindOriginIndex, width) {
   var leftmost = T[0].x;
   
   for (var i=1; i < T.length; i++) {
     if (T[i].x < leftmost) {
-      T[i] = { x: T[i].x + L, y: T[i].y };
+      T[i] = { x: T[i].x + width, y: T[i].y };
     }
   }
 
@@ -98,4 +107,12 @@ function values(stencil) {
     v.push(stencil[i].y);
   }
   return v;
+}
+
+function access(T, i) {
+  return T[mod(i, T.length)];
+}
+
+function mod(a, b) {
+  return ((a%b)+b)%b;
 }
