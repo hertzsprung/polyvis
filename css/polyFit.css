@@ -6,8 +6,8 @@
 }
 
 line.mesh {
-	stroke: grey;
-	stroke-width: 0.5;
+	stroke: #ddd;
+	stroke-width: 4;
 	fill: none;
 }
 
@@ -41,6 +41,17 @@ path.quad {
 text.quad {
 	fill: orangered;
 	text-anchor: end;
+}
+
+circle.current {
+	fill: orangered;
+	stroke: orangered;
+	stroke-width: 4;
+}
+
+line.current {
+	stroke: orangered;
+	stroke-width: 4;
 }
 
 .central {

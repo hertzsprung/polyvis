@@ -21,18 +21,6 @@
   var width = 640;
   var height = 480;
 
-  function approximate(domain, f) {
-    var N = 100;
-    var dx = (domain[1] - domain[0]) / N;
-
-    var data = [];
-    for (var i = 0; i <= N; i++) {
-      var x = domain[0] + i*dx;
-      data.push({x: x, y: f(x)});
-    }
-    return data;
-  }
-
   var stencil = [];
   stencil.push({x: -1, y: 2.5});
   stencil.push({x:  0.6, y: 3});

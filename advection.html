@@ -8,23 +8,31 @@
     <script src="script/advection.js" type="text/javascript"></script>
   </head>
   <body>
-<div id="graph"></div>
 <input id="timeline" type="range" style="width: 100%"/>
 <p>Time: <span id="timeline_value"></span></p>
 <p>Max Courant: <span id="maxCo"></span></p>
+<div id="advection"></div>
+<div id="polynomial"></div>
 <script>
   var margin = {top: 30, right: 40, bottom: 30, left: 50};
   var width = 640;
-  var height = 480;
+  var height = 320;
 
   var x = d3.scale.linear().domain([0, 1]).range([0, width]);
   var y = d3.scale.linear().domain([-1, 1]).range([height, 0]);
+
+  var polyX = d3.scale.linear().domain([-6, 2]).range([0, width]);
+  var polyY = d3.scale.linear().domain([-1, 1]).range([height, 0]);
 
   var line = d3.svg.line()
     .x(function(d) { return x(d.x); })
     .y(function(d) { return y(d.y); });
 
-  var graph = d3.select("#graph")
+  var polyLine = d3.svg.line()
+    .x(function(d) { return polyX(d.x); })
+    .y(function(d) { return polyY(d.y); });
+
+  var advection = d3.select("#advection")
     .append("svg")
       .attr("width", width + margin.left + margin.right)
       .attr("height", height + margin.top + margin.bottom)
@@ -32,31 +40,88 @@
       .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
   var xAxis = d3.svg.axis().scale(x).ticks(10);
-  graph.append("g")
+  advection.append("g")
     .attr("class", "axis")
     .attr("transform", "translate(0," + y(0) + ")")
     .call(xAxis);
 
   var yAxis = d3.svg.axis().scale(y).ticks(10).orient("left");
-  graph.append("g")
+  advection.append("g")
     .attr("class", "axis")
     .attr("transform", "translate(" + x(0) + ",0)")
     .call(yAxis);
 
+  var polynomial = d3.select("#polynomial")
+    .append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+  var polyXaxis = d3.svg.axis().scale(polyX).tickValues([-5, -3, -1, 1]);
+  polynomial.append("g")
+    .attr("class", "axis")
+    .attr("transform", "translate(0," + polyY(0) + ")")
+    .call(polyXaxis);
+
+  var polyYaxis = d3.svg.axis().scale(polyY).ticks(10).orient("left");
+  polynomial.append("g")
+    .attr("class", "axis")
+    .attr("transform", "translate(" + polyX(0) + ",0)")
+    .call(polyYaxis);
+
+  var currentPoint = null;
+  var currentFace = null;
+
   function redraw(simulation, frame, name) {
     var T = simulation.frames[frame].T;
 
-    graph.selectAll("." + name).remove();
-    graph.append("path")
+    advection.selectAll(".mesh").remove();
+    advection.selectAll("faces").data(simulation.faces).enter()
+      .append("line")
+        .attr("class", function(d, i) { return i == currentFace ? "mesh current" : "mesh"; })
+        .attr("face-index", function(d, i) { return i; })
+        .attr("x1", function(d) { return x(d); })
+        .attr("x2", function(d) { return x(d); })
+        .attr("y1", 0)
+        .attr("y2", height)
+        .on("click", function() {
+          var index = d3.select(this).attr("face-index");
+          if (currentFace == index) {
+            currentFace = null;
+          } else {
+            currentFace = index;
+          }
+          redraw(simulation, frame, name);
+        });
+
+    advection.select(".initial").remove();
+    advection.append("path")
+      .attr("class", "initial")
+      .attr("d", line(simulation.frames[0].T)); 
+
+    advection.selectAll("." + name).remove();
+    advection.append("path")
       .attr("class", name)
       .attr("d", line(T)); 
 
-    graph.selectAll("circle").remove();
-    graph.selectAll("point").data(T).enter()
+    advection.selectAll("circle").remove();
+    advection.selectAll("point").data(T).enter()
       .append("circle")
-        .attr("r", 4)
+        .attr("class", function(d, i) { return i == currentPoint ? "current" : ""; })
+        .attr("point-index", function(d, i) { return i; })
+        .attr("r", 6)
         .attr("cx", function(d) { return x(d.x); })
-        .attr("cy", function(d) { return y(d.y); });
+        .attr("cy", function(d) { return y(d.y); })
+        .on("click", function() {
+          var index = d3.select(this).attr("point-index");
+          if (currentPoint == index) {
+            currentPoint = null;
+          } else {
+            currentPoint = index;
+          }
+          redraw(simulation, frame, name);
+        });
 
     d3.select("#timeline_value")
       .text(format(simulation.frames[frame].t));
@@ -71,6 +136,27 @@
       .on("input", function() {
         redraw(simulation, this.value, name);
       });
+
+    redrawPolynomialIfNeeded(currentPoint, currentFace, T);
+  }
+
+  function redrawPolynomialIfNeeded(point, face, T) {
+    if (point != null && face != null) {
+      face = parseInt(face);
+      point = parseInt(point);
+      if (face == point) {
+        redrawPolynomial(T[point].polynomialL);
+      } else if (face == point+1) {
+        redrawPolynomial(T[point].polynomialR);
+      }
+    }
+  }
+
+  function redrawPolynomial(f) {
+    polynomial.selectAll(".polynomial").remove();
+    polynomial.append("path")
+      .attr("class", "polynomial cubic")        
+      .attr("d", polyLine(approximate(polyX.domain(), f))); 
   }
 
   var simulation = uniformDomain(1, 16);
@@ -79,19 +165,7 @@
 //  simulation.faces[6] += 0.055;
   simulation = sineWave(simulation, 2);
 
-  graph.selectAll("faces").data(simulation.faces).enter()
-    .append("line")
-      .attr("class", "mesh")
-      .attr("x1", function(d) { return x(d); })
-      .attr("x2", function(d) { return x(d); })
-      .attr("y1", "0")
-      .attr("y2", height - margin.top - margin.bottom);
-
   simulation = simulate(simulation, cubic(), 128, 0.1, 1/32);
-
-  graph.append("path")
-    .attr("class", "initial")
-    .attr("d", line(simulation.frames[0].T)); 
 
   redraw(simulation, simulation.frames.length - 1, "cubic");
 </script>

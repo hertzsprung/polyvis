@@ -76,8 +76,6 @@ function forwardStep(simulation) {
       polynomialL: fluxL.polynomial,
       polynomialR: fluxR.polynomial
     };
-
-    console.log(T[i]);
   }
 
   return T;

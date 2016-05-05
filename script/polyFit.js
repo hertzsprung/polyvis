@@ -61,3 +61,14 @@ function format(a) {
   return Math.round(a*100)/100;
 }
 
+function approximate(domain, f) {
+  var N = 100;
+  var dx = (domain[1] - domain[0]) / N;
+
+  var data = [];
+  for (var i = 0; i <= N; i++) {
+    var x = domain[0] + i*dx;
+    data.push({x: x, y: f(x)});
+  }
+  return data;
+}
