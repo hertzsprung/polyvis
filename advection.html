@@ -9,6 +9,7 @@
   </head>
   <body>
 <div id="graph"></div>
+<input id="timeline" type="range" style="width: 640px"/>
 <script>
   var margin = {top: 30, right: 40, bottom: 30, left: 50};
   var width = 640;
@@ -40,16 +41,28 @@
     .attr("transform", "translate(" + x(0) + ",0)")
     .call(yAxis);
 
-  function redraw(T, name) {
+  function redraw(simulation, frame, name) {
+    var T = simulation.frames[frame].T;
+
+    graph.selectAll("." + name).remove();
     graph.append("path")
       .attr("class", name)
       .attr("d", line(T)); 
 
+    graph.selectAll("circle").remove();
     graph.selectAll("point").data(T).enter()
       .append("circle")
         .attr("r", 4)
         .attr("cx", function(d) { return x(d.x); })
         .attr("cy", function(d) { return y(d.y); });
+
+    d3.select("#timeline")
+      .attr("min", "0")
+      .attr("max", simulation.frames.length-1)
+      .attr("value", frame)
+      .on("input", function() {
+        redraw(simulation, this.value, name);
+      });
   }
 
   var simulation = sineWave(uniformDomain(1, 16), 1);
@@ -59,7 +72,7 @@
     .attr("d", line(simulation.frames[0].T)); 
 
   simulation = simulate(simulation, cubic(), 32, 0.01, 1/32);
-  redraw(simulation.frames[simulation.frames.length - 1].T, "cubic");
+  redraw(simulation, simulation.frames.length - 1, "cubic");
 </script>
 </body>
 </html>

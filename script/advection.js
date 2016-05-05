@@ -3,14 +3,21 @@ function uniformDomain(width, divisions) {
 
   var simulation = {
     width: width,
+    faces: [],
     divisions: divisions, // FIXME: remove this when properly non-uniform
     frames: [{nt:0, t:0, T: []}]
   };
 
+  var faces = simulation.faces;
+
+  for (var i=0; i < divisions+1; i++) {
+    faces.push(i*dx);
+  }
+
   var T = simulation.frames[0].T;
 
   for (var i=0; i < divisions; i++) {
-    T.push({x: i*dx+dx/2});
+    T.push({x: 0.5*(faces[i] + faces[i+1])});
   }
 
   return simulation; 
@@ -42,6 +49,7 @@ function simulate(simulation, interpolator, endTime, dt, u) {
 
     simulation.frames.push({nt:nt, t:t, T: T});
   }
+
   return simulation;
 }
 
@@ -63,32 +71,33 @@ function flux(T, upwindOriginIndex, start, end, simulation) {
   for (var i=start; i <= end; i++) {
     stencil.push(access(T, i));
   }
-  stencil = localise(stencil, upwindOriginIndex-start, simulation.width);
+  stencil = localise(stencil, start, upwindOriginIndex, simulation);
   weights = [1e3, 1e3, 1, 1];
   return numeric.dot(values(stencil), fit(stencil, simulation.interpolator, weights).coefficients);
 }
 
-function localise(T, upwindOriginIndex, width) {
+function localise(T, startIndex, upwindOriginIndex, simulation) {
   var leftmost = T[0].x;
   
   for (var i=1; i < T.length; i++) {
     if (T[i].x < leftmost) {
-      T[i] = { x: T[i].x + width, y: T[i].y };
+      T[i] = { x: T[i].x + simulation.width, y: T[i].y };
     }
   }
 
-  var upwind = T[upwindOriginIndex].x;
-  var downwind = T[upwindOriginIndex+1].x; // this should always be safe
-  var face = 0.5*(upwind+downwind);
+  var localUpwindOriginIndex = upwindOriginIndex - startIndex;
+  var upwind = T[localUpwindOriginIndex].x;
+  var face = simulation.faces[upwindOriginIndex+1];
+  if (face < upwind) face += simulation.width;
   var scale = face - upwind;
 
   // stencil order: upwind, downwind, peripheral points
   var stencil = [];
-  stencil.push(T[upwindOriginIndex]);
-  stencil.push(T[upwindOriginIndex+1]);
+  stencil.push(T[localUpwindOriginIndex]);
+  stencil.push(T[localUpwindOriginIndex+1]);
 
   for (var i=0; i < T.length; i++) {
-    if (i != upwindOriginIndex && i != upwindOriginIndex+1) {
+    if (i != localUpwindOriginIndex && i != localUpwindOriginIndex+1) {
       stencil.push(T[i]);
     }
   }
