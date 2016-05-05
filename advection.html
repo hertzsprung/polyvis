@@ -105,10 +105,10 @@
       .attr("class", name)
       .attr("d", line(T)); 
 
-    advection.selectAll("circle").remove();
+    advection.selectAll(".advectionPoint").remove();
     advection.selectAll("point").data(T).enter()
       .append("circle")
-        .attr("class", function(d, i) { return i == currentPoint ? "current" : ""; })
+        .attr("class", function(d, i) { return i == currentPoint ? "advectionPoint current" : "advectionPoint"; })
         .attr("point-index", function(d, i) { return i; })
         .attr("r", 6)
         .attr("cx", function(d) { return x(d.x); })
@@ -145,18 +145,34 @@
       face = parseInt(face);
       point = parseInt(point);
       if (face == point) {
-        redrawPolynomial(T[point].polynomialL);
+        redrawPolynomial(T[point].fluxL);
       } else if (face == point+1) {
-        redrawPolynomial(T[point].polynomialR);
+        redrawPolynomial(T[point].fluxR);
       }
     }
   }
 
-  function redrawPolynomial(f) {
+  function redrawPolynomial(flux) {
     polynomial.selectAll(".polynomial").remove();
     polynomial.append("path")
       .attr("class", "polynomial cubic")        
-      .attr("d", polyLine(approximate(polyX.domain(), f))); 
+      .attr("d", polyLine(approximate(polyX.domain(), flux.polynomial))); 
+
+    polynomial.selectAll(".polynomialPoint").remove();
+    polynomial.selectAll("point").data(flux.stencil).enter()
+      .append("circle")
+        .attr("class", "polynomialPoint")
+        .attr("r", 6)
+        .attr("cx", function(d) { return polyX(d.x); })
+        .attr("cy", function(d) { return polyY(d.y); })
+
+    polynomial.selectAll(".coeff").remove();
+    polynomial.selectAll("coeffs").data(flux.stencil).enter()
+      .append("text")
+        .attr("class", "coeff cubic")
+        .attr("x", function(d) { return polyX(d.x) + 10; })
+        .attr("y", function(d) { return polyY(d.y) + 10; })
+        .text(function(d, i) { return format(flux.coefficients[i]); });
   }
 
   var simulation = uniformDomain(1, 16);

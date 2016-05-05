@@ -73,8 +73,8 @@ function forwardStep(simulation) {
     T[i] = { 
       x: T_old[i].x,
       y: T_old[i].y - courant(simulation, i) * (fluxR.value - fluxL.value),
-      polynomialL: fluxL.polynomial,
-      polynomialR: fluxR.polynomial
+      fluxL: fluxL,
+      fluxR: fluxR
     };
   }
 
@@ -109,7 +109,9 @@ function flux(T, upwindOriginIndex, start, end, simulation) {
 
   return {
     value: numeric.dot(values(stencil), polyFit.coefficients),
-    polynomial: polyFit.polynomial
+    polynomial: polyFit.polynomial,
+    stencil: stencil,
+    coefficients: polyFit.coefficients
   };
 }
 
