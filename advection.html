@@ -59,7 +59,7 @@
         .attr("cy", function(d) { return y(d.y); });
 
     d3.select("#timeline_value")
-      .text(simulation.frames[frame].t);
+      .text(format(simulation.frames[frame].t));
 
     d3.select("#maxCo")
       .text(simulation.maxCourant);
@@ -74,9 +74,9 @@
   }
 
   var simulation = uniformDomain(1, 16);
-  simulation.faces[5] -= 0.055;
-  simulation.faces[3] += 0.055;
-  simulation.faces[6] += 0.055;
+//  simulation.faces[5] -= 0.055;
+//  simulation.faces[3] += 0.055;
+//  simulation.faces[6] += 0.055;
   simulation = calculateCellCentres(simulation);
   simulation = sineWave(simulation, 2);
 

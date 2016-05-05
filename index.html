@@ -82,10 +82,6 @@
     redraw();
   }
 
-  function format(a) {
-    return Math.round(a*100)/100;
-  }
-
   function redraw() {
     var quadFit = fit(stencil, quadratic(), weights);
     var cubicFit = fit(stencil, cubic(), weights);

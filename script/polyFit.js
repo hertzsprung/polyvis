@@ -56,3 +56,8 @@ function pinv(A) {
   for(i=M-1;i!==-1;i--) { if(S[i]>tol) Sinv[i] = 1/S[i]; else Sinv[i] = 0; }
   return numeric.dot(numeric.dot(V,numeric.diag(Sinv)),numeric.transpose(U))
 }
+
+function format(a) {
+  return Math.round(a*100)/100;
+}
+
