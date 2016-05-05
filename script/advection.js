@@ -4,7 +4,6 @@ function uniformDomain(width, divisions) {
   var simulation = {
     width: width,
     faces: [],
-    divisions: divisions, // FIXME: remove this when properly non-uniform
     frames: [{nt:0, t:0, T: []}]
   };
 
@@ -14,13 +13,19 @@ function uniformDomain(width, divisions) {
     faces.push(i*dx);
   }
 
-  var T = simulation.frames[0].T;
+  return calculateCellCentres(simulation);
+}
 
-  for (var i=0; i < divisions; i++) {
+function calculateCellCentres(simulation) {
+  var T = simulation.frames[0].T;
+  T.length = 0;
+  var faces = simulation.faces;
+
+  for (var i=0; i < faces.length - 1; i++) {
     T.push({x: 0.5*(faces[i] + faces[i+1])});
   }
 
-  return simulation; 
+  return simulation;
 }
 
 function sineWave(simulation, k) {
@@ -35,12 +40,23 @@ function sineWave(simulation, k) {
   return simulation;
 }
 
+function hat(simulation) {
+  var T = simulation.frames[0].T;
+
+  for (var i=0; i < T.length; i++) {
+    T[i].y = (T[i].x < 0.5) ? 0 : 1;
+  }
+
+  return simulation;
+}
+
 function simulate(simulation, interpolator, endTime, dt, u) {
   simulation.interpolator = interpolator;
+  simulation.u = u;
+  simulation.dt = dt;
+  simulation.maxCourant = maxCourant(simulation);
 
-  var dx = simulation.width / simulation.divisions; // FIXME: this will disappear with properly nonuniform grid
   var t = dt;
-  simulation.Co = u * dt / dx;
 
   for (var nt=1; t < endTime+dt; nt+=1, t+=dt) {
     var T_old = simulation.frames[nt-1].T;
@@ -58,12 +74,30 @@ function forwardStep(simulation) {
   var T = T_old.slice();
 
   for (var i=0; i < T.length; i++) {
-    T[i] = { x: T_old[i].x, y: T_old[i].y - simulation.Co * (
+
+    T[i] = { x: T_old[i].x, y: T_old[i].y - courant(simulation, i) * (
         flux(T_old, i, i-2, i+1, simulation) - 
         flux(T_old, i-1, i-3, i, simulation))};
   }
 
   return T;
+}
+
+function maxCourant(simulation) {
+  var T = simulation.frames[0].T;
+  var max = 0;
+
+  for (var i=0; i < T.length; i++) {
+    var c = courant(simulation, i);
+    if (c > max) max = c;
+  }
+
+  return max;
+}
+
+function courant(simulation, i) {
+    var dx = simulation.faces[i+1] - simulation.faces[i];
+    return simulation.u * simulation.dt / dx;
 }
 
 function flux(T, upwindOriginIndex, start, end, simulation) {
