@@ -28,12 +28,13 @@ function sineWave(simulation, k) {
 }
 
 function simulate(simulation, interpolator, endTime, dt, u) {
-  calculateCellCentres(simulation);
-  simulation.generator(simulation.frames[0].T);
-
   simulation.interpolator = interpolator;
   simulation.u = u;
   simulation.dt = dt;
+
+  calculateCellCentres(simulation);
+  simulation.generator(simulation.frames[0].T);
+
   simulation.maxCourant = maxCourant(simulation);
 
   var t = dt;
@@ -66,9 +67,17 @@ function forwardStep(simulation) {
   var T = T_old.slice();
 
   for (var i=0; i < T.length; i++) {
-    T[i] = { x: T_old[i].x, y: T_old[i].y - courant(simulation, i) * (
-        flux(T_old, i, i-2, i+1, simulation) - 
-        flux(T_old, i-1, i-3, i, simulation))};
+    var fluxL = flux(T_old, i-1, i-3, i, simulation);
+    var fluxR = flux(T_old, i, i-2, i+1, simulation);
+
+    T[i] = { 
+      x: T_old[i].x,
+      y: T_old[i].y - courant(simulation, i) * (fluxR.value - fluxL.value),
+      polynomialL: fluxL.polynomial,
+      polynomialR: fluxR.polynomial
+    };
+
+    console.log(T[i]);
   }
 
   return T;
@@ -98,7 +107,12 @@ function flux(T, upwindOriginIndex, start, end, simulation) {
   }
   stencil = localise(stencil, start, upwindOriginIndex, simulation);
   weights = [1e3, 1e3, 1, 1];
-  return numeric.dot(values(stencil), fit(stencil, simulation.interpolator, weights).coefficients);
+  var polyFit = fit(stencil, simulation.interpolator, weights);
+
+  return {
+    value: numeric.dot(values(stencil), polyFit.coefficients),
+    polynomial: polyFit.polynomial
+  };
 }
 
 function localise(T, startIndex, upwindOriginIndex, simulation) {
