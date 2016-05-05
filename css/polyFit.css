@@ -5,14 +5,23 @@
 	fill: none;
 }
 
-path {
-	stroke: steelblue;
+path.cubic, path.quad, path.initial, path.advected {
 	stroke-width: 2;
 	fill: none;
 }
 
+path.initial {
+	stroke: grey;
+	stroke-width: 1;
+}
+
+path.advected {
+	stroke: steelblue;
+}
+
 path.cubic {
 	stroke: steelblue;
+	stroke-width: 6;
 }
 
 text.cubic {

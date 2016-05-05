@@ -4,6 +4,7 @@
     <link rel="stylesheet" href="css/polyFit.css"/>
     <script src="script/d3.v3.min.js" type="text/javascript"></script>
     <script src="script/numeric-1.2.6.min.js" type="text/javascript"></script>
+    <script src="script/polyFit.js" type="text/javascript"></script>
     <script src="script/advection.js" type="text/javascript"></script>
   </head>
   <body>
@@ -13,7 +14,7 @@
   var width = 640;
   var height = 480;
 
-  var x = d3.scale.linear().domain([0, 2*Math.PI]).range([0, width]);
+  var x = d3.scale.linear().domain([0, 1]).range([0, width]);
   var y = d3.scale.linear().domain([-1, 1]).range([height, 0]);
 
   var line = d3.svg.line()
@@ -27,7 +28,7 @@
     .append("g")
       .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-    var xAxis = d3.svg.axis().scale(x).tickValues([0, 0.5*Math.PI, Math.PI, 1.5*Math.PI, 2*Math.PI]);
+  var xAxis = d3.svg.axis().scale(x).ticks(10);
   graph.append("g")
     .attr("class", "axis")
     .attr("transform", "translate(0," + y(0) + ")")
@@ -39,9 +40,9 @@
     .attr("transform", "translate(" + x(0) + ",0)")
     .call(yAxis);
 
-  function redraw() {
+  function redraw(T, name) {
     graph.append("path")
-      .attr("class", "polynomial") // FIXME
+      .attr("class", name)
       .attr("d", line(T)); 
 
     graph.selectAll("point").data(T).enter()
@@ -51,7 +52,24 @@
         .attr("cy", function(d) { return y(d.y); });
   }
 
-  redraw();
+  graph.append("path")
+    .attr("class", "initial")
+    .attr("d", line(T_init)); 
+
+  for (var nt=1; t < endTime+dt; nt+=1, t+=dt) {
+      forwardStep(cubic());
+  }
+  redraw(T, "cubic");
+
+  T = T_init.slice();
+  T_old = T_init.slice();
+  T_oldOld = T_init.slice();
+
+  t = 0;
+  for (var nt=1; t < endTime+dt; nt+=1, t+=dt) {
+      forwardStep(quadratic());
+  }
+  redraw(T, "quad");
 </script>
 </body>
 </html>
