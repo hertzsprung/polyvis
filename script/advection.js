@@ -34,6 +34,7 @@ function simulate(simulation, interpolator, endTime, dt, u) {
 
   calculateCellCentres(simulation);
   simulation.generator(simulation.frames[0].T);
+  calculateFluxes(simulation);
 
   simulation.maxCourant = maxCourant(simulation);
 
@@ -42,9 +43,10 @@ function simulate(simulation, interpolator, endTime, dt, u) {
   for (var nt=1; t < endTime+dt; nt+=1, t+=dt) {
     var T_old = simulation.frames[nt-1].T;
 
-    var T = forwardStep(simulation);
+    var T = step(simulation);
 
     simulation.frames.push({nt:nt, t:t, T: T});
+//    break;
   }
 
   return simulation;
@@ -62,20 +64,38 @@ function calculateCellCentres(simulation) {
   return simulation;
 }
 
-function forwardStep(simulation) {
-  var T_old = simulation.frames[simulation.frames.length - 1].T;
-  var T = T_old.slice();
-
+function calculateFluxes(simulation) {
+  var T = simulation.frames[0].T;
+  
   for (var i=0; i < T.length; i++) {
-    var fluxL = flux(T_old, i-1, i-3, i, simulation);
-    var fluxR = flux(T_old, i, i-2, i+1, simulation);
+    var fluxL = flux(T, i-1, i-3, i, simulation);
+    var fluxR = flux(T, i, i-2, i+1, simulation);
 
-    T[i] = { 
-      x: T_old[i].x,
-      y: T_old[i].y - courant(simulation, i) * (fluxR.value - fluxL.value),
-      fluxL: fluxL,
-      fluxR: fluxR
-    };
+    T[i].fluxL = fluxL;
+    T[i].fluxR = fluxR;
+    T[i].flux  = -courant(simulation, i) * (fluxR.value - fluxL.value);
+  }
+}
+
+function step(simulation) {
+  var T_old = simulation.frames[simulation.frames.length - 1].T;
+
+  T = [];
+
+  for (var corr=0; corr<3; corr++) {
+    for (var i=0; i < T_old.length; i++) {
+      var fluxL = flux(T_old, i-1, i-3, i, simulation);
+      var fluxR = flux(T_old, i, i-2, i+1, simulation);
+
+      T[i] = { 
+        x: T_old[i].x,
+        fluxL: fluxL,
+        fluxR: fluxR,
+        flux: -courant(simulation, i) * (fluxR.value - fluxL.value)
+      };
+
+      T[i].y = T_old[i].y + 0.5*(T_old[i].flux + T[i].flux);
+    }
   }
 
   return T;
