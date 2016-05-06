@@ -42,7 +42,7 @@ function simulate(simulation, interpolator, endTime, dt, u) {
   for (var nt=1; t < endTime+dt; nt+=1, t+=dt) {
     var T_old = simulation.frames[nt-1].T;
 
-    var T = forwardStep(simulation);
+    var T = rk3Step(simulation);
 
     simulation.frames.push({nt:nt, t:t, T: T});
   }
@@ -73,6 +73,29 @@ function forwardStep(simulation) {
       x: T_old[i].x,
       y: T_old[i].y - courant(simulation, i) * (T_old[i].fluxR.value - T_old[i].fluxL.value),
     };
+  }
+
+  return T;
+}
+
+function rk3Step(simulation) {
+  var T_old = simulation.frames[simulation.frames.length - 1].T;
+  var T = T_old.slice();
+
+  calculateFluxes(simulation, T_old);
+
+  for (var corr=0; corr < 3; corr++) {
+    calculateFluxes(simulation, T);
+
+    for (var i=0; i < T.length; i++) {
+      var flux_old = T_old[i].fluxR.value - T_old[i].fluxL.value;
+      var flux_new = T[i].fluxR.value - T[i].fluxL.value;
+
+      T[i] = { 
+        x: T_old[i].x,
+        y: T_old[i].y - 0.5 * courant(simulation, i) * (flux_old + flux_new)
+      };
+    }
   }
 
   return T;

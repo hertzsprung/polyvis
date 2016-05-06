@@ -19,7 +19,7 @@
   var height = 320;
 
   var x = d3.scale.linear().domain([0, 1]).range([0, width]);
-  var y = d3.scale.linear().domain([-1, 2]).range([height, 0]);
+  var y = d3.scale.linear().domain([-1, 1]).range([height, 0]);
 
   var polyX = d3.scale.linear().domain([-6, 2]).range([0, width]);
   var polyY = d3.scale.linear().domain([-1, 1]).range([height, 0]);
@@ -187,7 +187,7 @@
 //  simulation.faces[6] += 0.055;
   simulation = sineWave(simulation, 2);
 
-  simulation = simulate(simulation, cubic(), 256, 0.02, 1/32);
+  simulation = simulate(simulation, cubic(), 256, 0.2, 1/32);
 
   redraw(simulation, simulation.frames.length - 1, "cubic");
 </script>
