@@ -49,7 +49,8 @@ circle.current {
 	stroke-width: 4;
 }
 
-line.current {
+line.current,
+.current path {
 	stroke: orangered;
 	stroke-width: 4;
 }
