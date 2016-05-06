@@ -66,20 +66,23 @@ function forwardStep(simulation) {
   var T_old = simulation.frames[simulation.frames.length - 1].T;
   var T = T_old.slice();
 
-  for (var i=0; i < T.length; i++) {
-    var fluxL = flux(T_old, i-1, i-3, i, simulation);
-    var fluxR = flux(T_old, i, i-2, i+1, simulation);
+  calculateFluxes(simulation, T_old);
 
+  for (var i=0; i < T.length; i++) {
     T[i] = { 
       x: T_old[i].x,
-      y: T_old[i].y - courant(simulation, i) * (fluxR.value - fluxL.value),
+      y: T_old[i].y - courant(simulation, i) * (T_old[i].fluxR.value - T_old[i].fluxL.value),
     };
-
-    T_old[i].fluxL = fluxL;
-    T_old[i].fluxR = fluxR;
   }
 
   return T;
+}
+
+function calculateFluxes(simulation, T) {
+  for (var i=0; i < T.length; i++) {
+    T[i].fluxL = flux(T, i-1, i-3, i, simulation);
+    T[i].fluxR = flux(T, i, i-2, i+1, simulation);
+  }
 }
 
 function maxCourant(simulation) {
