@@ -73,9 +73,10 @@ function forwardStep(simulation) {
     T[i] = { 
       x: T_old[i].x,
       y: T_old[i].y - courant(simulation, i) * (fluxR.value - fluxL.value),
-      fluxL: fluxL,
-      fluxR: fluxR
     };
+
+    T_old[i].fluxL = fluxL;
+    T_old[i].fluxR = fluxR;
   }
 
   return T;
