@@ -27,6 +27,16 @@ function sineWave(simulation, k) {
   return simulation;
 }
 
+function oscillatory(simulation) {
+  simulation.generator = function(T) {
+    for (var i=0; i < T.length; i++) {
+      T[i].y = 2 * (i % 2) - 1;
+    }
+  };
+
+  return simulation;
+}
+
 function simulate(simulation, interpolator, endTime, dt, u) {
   simulation.interpolator = interpolator;
   simulation.u = u;
